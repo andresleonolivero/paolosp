@@ -8,64 +8,90 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAUmdD8ZcWU_ed8pkemWZu-3wTirtPlC-I",
+            authDomain: "paolos-pizzas.firebaseapp.com",
+            projectId: "paolos-pizzas",
+            storageBucket: "paolos-pizzas.firebasestorage.app",
+            messagingSenderId: "823908913298",
+            appId: "1:823908913298:web:ec28ace497ef7021b7164b"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        var database = firebase.database();
+    </script>
+
     <div class="grid-overlay"></div>
 
-    <section id="login-section" class="auth-container">
-        <div class="auth-card">
-            <h1 class="brand-login">PAOLO'S <span class="accent">PIZZAS</span></h1>
-            <div class="input-field">
-                <input type="text" id="username" required autocomplete="off">
-                <label>Usuario</label>
+    <section id="login-screen" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
+        <div class="glass-card" style="max-width: 400px; width: 100%; padding: 40px; text-align: center; border: 1px solid var(--accent);">
+            <h2 class="accent" style="font-family: 'Orbitron'; margin-bottom: 10px; letter-spacing: 2px;">PAOLO'S SYSTEM</h2>
+            
+            <div id="debug-status" style="font-size: 0.7rem; color: #555; margin-bottom: 25px; font-family: 'Orbitron';">CONECTANDO A LA NUBE...</div>
+
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <input type="text" id="login-user" placeholder="USUARIO" class="inv-input-inline" style="width: 100%; text-align: center; text-transform: lowercase;">
+                <input type="password" id="login-pass" placeholder="CONTRASEÑA" class="inv-input-inline" style="width: 100%; text-align: center;">
+                <button onclick="validarAcceso()" class="btn-action" style="width: 100%; margin-top: 10px;">ACCEDER AL SISTEMA</button>
             </div>
-            <div class="input-field">
-                <input type="password" id="password" required>
-                <label>Contraseña</label>
-            </div>
-            <button onclick="login()" class="btn-action">INGRESAR</button>
+            
+            <p id="error-txt" style="color: #ff4444; margin-top: 20px; font-size: 0.8rem; font-weight: bold; display: none;">⚠️ USUARIO O CLAVE INCORRECTA</p>
         </div>
     </section>
 
-    <main id="dashboard" class="hidden">
+    <main id="dashboard" class="hidden"> 
         <header class="top-bar">
             <div class="brand">PAOLO'S <span class="accent">PIZZAS</span></div>
             <div class="user-meta">
-                <span id="user-display"></span>
-                <button onclick="logout()" class="btn-logout">SALIR</button>
+                <span id="user-display">ADMIN</span> 
+                <button onclick="cerrarSesion()" class="btn-logout">SALIR</button>
             </div>
         </header>
 
         <section id="module-selector" class="menu-grid">
             <button class="menu-item glass-card neon-hover" onclick="openModule('pizzas')">
-                <span class="symbol">🍕</span>MESAS
+                <span class="symbol">🍕</span>MESAS / PEDIDOS
             </button>
             <button class="menu-item glass-card neon-hover" onclick="openModule('transferencias')">
-                <span class="symbol">📱</span>TRANSF.
+                <span class="symbol">📱</span>REPORTES TRANSF.
             </button>
             <button class="menu-item glass-card neon-hover" onclick="openModule('ventas-dia')">
-                <span class="symbol">📊</span>VENTAS DÍA
+                <span class="symbol">🏪</span>CAJA TURNO
             </button>
             <button class="menu-item glass-card neon-hover" onclick="openModule('inv-bebidas')">
                 <span class="symbol">🥤</span>INV. BEBIDAS
             </button>
             <button class="menu-item glass-card neon-hover" onclick="openModule('otros')">
-                <span class="symbol">⚙️</span>OTROS
+                <span class="symbol">💸</span>GASTOS
+            </button>
+            <button class="menu-item glass-card neon-hover" style="border-color: var(--success);" onclick="openModule('stats')">
+                <span class="symbol">📈</span>ESTADÍSTICAS
+            </button>
+            <button class="menu-item glass-card neon-hover" style="border-color: var(--accent);" onclick="openModule('ajustes')">
+                <span class="symbol">⚙️</span>AJUSTES PRECIOS
             </button>
         </section>
 
         <section id="work-area" class="hidden">
             <div class="work-header">
                 <div class="nav-controls">
-                    <button onclick="showMenu()" class="btn-nav neon-border">MENÚ</button>
-                    <button id="btn-back-tables" onclick="openModule('pizzas')" class="btn-nav hidden">VOLVER</button>
+                    <button onclick="showMenu()" class="btn-nav neon-border">🏠 INICIO</button>
+                    <button id="btn-back-tables" onclick="openModule('pizzas')" class="btn-nav hidden">🔙 MESAS</button>
                 </div>
                 <h3 id="module-title" class="accent-title"></h3>
             </div>
-            
+                
             <div id="module-content" class="content-display">
                 </div>
         </section>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js"></script> 
 </body>
 </html>
