@@ -414,40 +414,88 @@ function selectDestino(destino) {
         <div id="product-list-container"></div><div id="summary-container"></div>`;
     renderOrderSummary(destino);
 }
-
 function filterItems(dest) {
-    const searchTerm = document.getElementById('product-search').value.toLowerCase();
+    const searchTerm = document.getElementById('product-search').value.toLowerCase().trim();
     const container = document.getElementById('product-list-container');
     const categoriesDiv = document.querySelector('.categories-grid');
-    if (searchTerm === "") { categoriesDiv.classList.remove('hidden'); container.innerHTML = ""; return; }
+
+    if (searchTerm === "") { 
+        categoriesDiv.classList.remove('hidden'); 
+        container.innerHTML = ""; 
+        return; 
+    }
+
     categoriesDiv.classList.add('hidden');
     let html = `<div class="products-grid">`;
     let found = false;
 
+    // --- 1. BUSCAR EN PORCIONES (SABORES) ---
+    // Recorremos los sabores para ofrecer la venta por porción ($7.000)
+    DB.sabores_pizzas.forEach(sabor => {
+        if (sabor.nombre.toLowerCase().includes(searchTerm)) {
+            found = true;
+            html += `
+            <div class="product-card search-result" style="border: 1px solid var(--warning); position: relative;">
+                <small style="color: var(--warning); font-size: 0.6rem; letter-spacing: 1px;">🍕 PORCIÓN</small>
+                <h4 style="margin: 8px 0;">${sabor.nombre}</h4>
+                <span class="price" style="font-size: 0.9rem; margin-bottom: 10px;">$${sabor.precio.toLocaleString()}</span>
+                <button class="btn-action" style="background: var(--warning); color: #000; border: none;" 
+                    onclick="addItemToOrder('${dest}', 'Porción ${sabor.nombre}', ${sabor.precio})">
+                    AÑADIR
+                </button>
+            </div>`;
+        }
+    });
+
+    // --- 2. BUSCAR EN EL RESTO DEL MENÚ (LO QUE YA TENÍAS) ---
     for (const [catKey, items] of Object.entries(DB.menu)) {
         if (catKey === 'bebidas') continue; 
+        
         items.forEach(p => {
             if (p.nombre.toLowerCase().includes(searchTerm)) {
                 found = true;
+                
+                // Caso especial Lasañas (3 tamaños)
                 if (catKey === 'lasañas') {
-                    html += `<div class="product-card search-result"><h4>${p.nombre}</h4><div style="display:grid; gap:5px;">
-                        <button class="category-btn" onclick="addItemToOrder('${dest}', '${p.nombre} (P)', ${p.precio_p})">P: $${p.precio_p}</button>
-                        <button class="category-btn" onclick="addItemToOrder('${dest}', '${p.nombre} (M)', ${p.precio_m})">M: $${p.precio_m}</button>
-                        <button class="category-btn" onclick="addItemToOrder('${dest}', '${p.nombre} (F)', ${p.precio_f})">F: $${p.precio_f}</button></div></div>`;
-                } else {
-                    const action = (catKey === 'pizzas_completa') ? `onclick="renderPizzaFlavorSelector('${dest}', '${p.nombre}', ${p.precio})"` : `onclick="addItemToOrder('${dest}', '${p.nombre}', ${p.precio})"`;
-                    html += `<div class="product-card search-result"><h4>${p.nombre}</h4><button class="btn-action" ${action}>AÑADIR</button></div>`;
+                    html += `
+                    <div class="product-card search-result">
+                        <small style="color: var(--accent); font-size: 0.6rem;">🍝 LASAÑA</small>
+                        <h4>${p.nombre}</h4>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top: 10px;">
+                            <button class="category-btn" onclick="addItemToOrder('${dest}', '${p.nombre} (P)', ${p.precio_p})">P</button>
+                            <button class="category-btn" onclick="addItemToOrder('${dest}', '${p.nombre} (M)', ${p.precio_m})">M</button>
+                            <button class="category-btn" onclick="addItemToOrder('${dest}', '${p.nombre} (F)', ${p.precio_f})">F</button>
+                        </div>
+                    </div>`;
+                } 
+                // Resto de productos (Pizzas completas, etc.)
+                else {
+                    const action = (catKey === 'pizzas_completa') ? 
+                        `onclick="renderPizzaFlavorSelector('${dest}', '${p.nombre}', ${p.precio})"` : 
+                        `onclick="addItemToOrder('${dest}', '${p.nombre}', ${p.precio})"`;
+                    
+                    html += `
+                    <div class="product-card search-result">
+                        <small style="color: var(--accent); font-size: 0.6rem;">${catKey.toUpperCase()}</small>
+                        <h4>${p.nombre}</h4>
+                        <span class="price">$${p.precio.toLocaleString()}</span>
+                        <button class="btn-action" ${action}>AÑADIR</button>
+                    </div>`;
                 }
             }
         });
     }
-    DB.bebidas_inv.forEach(p => {
-        if (p.nombre.toLowerCase().includes(searchTerm)) {
-            found = true;
-            html += `<div class="product-card search-result"><h4>${p.nombre}</h4><button class="btn-action" onclick="sellBebida('${dest}', ${p.id})">AÑADIR</button></div>`;
-        }
-    });
-    container.innerHTML = found ? html + `</div>` : `<div style="text-align:center; padding:20px;">Sin resultados.</div>`;
+
+    if (!found) {
+        html += `
+        <div style="grid-column: span 2; text-align: center; padding: 40px; opacity: 0.5;">
+            <p>No se encontraron productos o porciones</p>
+            <small>Intenta con otra palabra clave</small>
+        </div>`;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
 }
 
 function renderProductsByCategory(cat, dest) {
@@ -546,12 +594,20 @@ function renderOrderSummary(dest) {
             <div style="display:flex; gap:10px;"><span>$${(it.p * it.c).toLocaleString()}</span>
             <button class="btn-del-item" onclick="removeItem('${dest}', ${it.ids[it.ids.length-1]})">✕</button></div></div>`;
     });
+    
+    // CAMBIO AQUÍ: Ahora pasamos '${dest}' en el onclick
     html += `</div><div class="payment-selector">
-            <button class="pay-btn ${metodoPagoSeleccionado === 'Efectivo' ? 'selected' : ''}" onclick="setMetodoPago('Efectivo')">💵 EFECTIVO</button>
-            <button class="pay-btn ${metodoPagoSeleccionado === 'Transferencia' ? 'selected' : ''}" onclick="setMetodoPago('Transferencia')">📱 TRANSF.</button>
+            <button class="pay-btn ${metodoPagoSeleccionado === 'Efectivo' ? 'selected' : ''}" onclick="setMetodoPago('Efectivo', '${dest}')">💵 EFECTIVO</button>
+            <button class="pay-btn ${metodoPagoSeleccionado === 'Transferencia' ? 'selected' : ''}" onclick="setMetodoPago('Transferencia', '${dest}')">📱 TRANSF.</button>
         </div><div class="summary-total"><span>TOTAL</span><span>$${total.toLocaleString()}</span></div>
         <button class="btn-action" style="background:var(--success); color:#000;" onclick="clearOrder('${dest}')">FINALIZAR CUENTA</button></div>`;
     document.getElementById('summary-container').innerHTML = html;
+}
+
+// CAMBIO AQUÍ: La función ahora recibe el destino directamente y refresca el resumen
+function setMetodoPago(m, dest) {
+    metodoPagoSeleccionado = m;
+    renderOrderSummary(dest);
 }
 
 function clearOrder(dest) { 
@@ -577,12 +633,6 @@ function addItemToOrder(dest, nombre, precio) {
 function removeItem(dest, index) { 
     Cuentas[dest].splice(index, 1); 
     renderOrderSummary(dest); 
-}
-
-function setMetodoPago(m) {
-    metodoPagoSeleccionado = m;
-    const title = document.getElementById('module-title').innerText.toLowerCase();
-    renderOrderSummary(title);
 }
 
 function abrirCaja() {
